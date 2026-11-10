@@ -1,25 +1,18 @@
 # WORKSHOP_3: Streaming ETL with Apache Kafka and Machine Learning
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-4.4.0-black.svg?logo=apachekafka)](https://kafka.apache.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-blue.svg?logo=postgresql)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
-[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.3%2B-F7931E.svg?logo=scikitlearn)](https://scikit-learn.org/)
-[![Power BI](https://img.shields.io/badge/Power%20BI-Desktop-F2C811.svg?logo=powerbi)](https://powerbi.microsoft.com/)
+## 1. General Project Context
 
-## 1. Contexto General del Proyecto
+**WORKSHOP_3** is an advanced data engineering academic and industrial project that implements a hybrid ETL pipeline (Batch & Real-time Streaming), combining **Machine Learning** inference during stream processing, **Apache Kafka**, operational persistence in **PostgreSQL**, star-schema dimensional modeling, and an interactive dashboard in **Power BI**.
 
-**WORKSHOP_3** es un proyecto académico e industrial de ingeniería de datos avanzado que implementa un pipeline ETL híbrido (Batch & Real-time Streaming), combinando inferencia de **Machine Learning** en tiempo de procesamiento, **Apache Kafka**, persistencia operacional en **PostgreSQL**, modelado dimensional en esquema estrella y un dashboard interactivo en **Power BI**.
-
-La solución toma como base histórica los datos del *World Happiness Report* correspondientes al quinquenio **2015–2019** (782 registros en total) para predecir el indicador objetivo `happiness_score` a partir de seis variables socioeconómicas principales.
+The solution uses historical data from the *World Happiness Report* for the 5-year period **2015–2019** (782 total records) to predict the target indicator `happiness_score` based on six main socioeconomic variables.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                                ARQUITECTURA DE LA SOLUCIÓN                              │
+│                                  SOLUTION ARCHITECTURE                                  │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
  ┌───────────────────────────────────────────────────────────────────────────────────────┐
- │                                  1. PROCESAMIENTO BATCH                               │
+ │                                   1. BATCH PROCESSING                                 │
  │                                                                                       │
  │ ┌───────────────┐     ┌──────────────────────┐     ┌────────────────────────────────┐ │
  │ │  Raw Data     │ ──> │ Cleaning &           │ ──> │ Model Training & Comparison    │ │
@@ -29,7 +22,7 @@ La solución toma como base histórica los datos del *World Happiness Report* co
                                                                       │ Serialized Model
                                                                       ▼ (models/model.pkl)
  ┌───────────────────────────────────────────────────────────────────────────────────────┐
- │                                 2. PROCESAMIENTO STREAMING                            │
+ │                                2. STREAMING PROCESSING                                │
  │                                                                                       │
  │ ┌───────────────┐  Producer   ┌───────────────────┐  Consumer  ┌────────────────────┐ │
  │ │ Consolidated  │ ──────────> │ Apache Kafka      │ ─────────> │ Python ML Consumer │ │
@@ -39,20 +32,20 @@ La solución toma como base histórica los datos del *World Happiness Report* co
  └────────────────────────────────────────────────────────────────────────────┼──────────┘
                                                                               │
  ┌────────────────────────────────────────────────────────────────────────────┼──────────┐
- │                                3. PERSISTENCIA Y ANALÍTICA                 │          │
+ │                                3. PERSISTENCE AND ANALYTICS                │          │
  │                                                                            ▼          │
  │  ┌──────────────────────────────────────────────────────────────────────────────────┐ │
  │  │                              PostgreSQL (happiness_streaming)                    │ │
  │  │                                                                                  │ │
- │  │  [ Capa Operacional ]                                                            │ │
+ │  │  [ Operational Layer ]                                                           │ │
  │  │  ├── raw_events (BYTEA payload, deduplication control)                           │ │
  │  │  ├── processed_events (status, model version, timestamps)                         │ │
  │  │  └── predictions (predicted_score, actual_score, absolute_error)                 │ │
  │  │                                                                                  │ │
- │  │  [ Capa Analítica - Esquema Estrella ]                                           │ │
- │  │  ├── dim_country (164 países)                                                    │ │
- │  │  ├── dim_date (atributos temporales de emisión)                                  │ │
- │  │  └── fact_predictions (782 hechos con report_year histórico)                    │ │
+ │  │  [ Analytical Layer - Star Schema ]                                              │ │
+ │  │  ├── dim_country (164 countries)                                                 │ │
+ │  │  ├── dim_date (event emission date attributes)                                   │ │
+ │  │  └── fact_predictions (782 facts with historical report_year)                    │ │
  │  └──────────────────────────────────────────┬───────────────────────────────────────┘ │
  │                                             │ Direct Import Connection                │
  │                                             ▼                                         │
@@ -62,45 +55,52 @@ La solución toma como base histórica los datos del *World Happiness Report* co
  └───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Relación entre Modalidades Batch y Streaming
-- **Batch Processing:** Reservado para la recolección, limpieza, armonización de los 5 datasets heterogéneos, feature engineering y el entrenamiento/evaluación offline de modelos de regresión. Culmina con la exportación del artefacto de ML entrenado (`model.pkl`).
-- **Streaming Processing:** Utilizado para la transportación desacoplada y asíncrona de eventos con Apache Kafka, la validación estricta de contratos de datos, la inferencia en tiempo real al consumir cada mensaje, el control operacional de idempotencia/deduplicación y la persistencia estructurada.
+### Relationship Between Batch and Streaming Modalities
+
+* **Batch Processing:** Dedicated to data collection, cleaning, and harmonization of the 5 heterogeneous datasets, feature engineering, and offline training/evaluation of regression models. It concludes with the export of the trained ML artifact (`model.pkl`).
+
+* **Streaming Processing:** Dedicated to asynchronous, decoupled event transport via Apache Kafka, strict data contract validation, real-time inference upon message consumption, operational idempotency/deduplication control, and structured persistence.
 
 ---
 
-## 2. Fase A: Exploración, Limpieza y Preparación de Datos (EDA)
+## 2. Phase A: Exploratory Data Analysis, Cleaning, and Preparation (EDA)
 
-### Fuentes de Información de Origen
-Ubicación de archivos originales: `data/raw/`
-- `2015.csv`: 158 registros, 12 columnas.
-- `2016.csv`: 157 registros, 13 columnas.
-- `2017.csv`: 155 registros, 12 columnas.
-- `2018.csv`: 156 registros, 9 columnas.
-- `2019.csv`: 156 registros, 9 columnas.
-- **Total acumulado:** 782 registros.
+### Source Datasets
 
-### Dataset Consolidado
-Ubicación: `data/processed/world_happiness_2015_2019.csv` (782 registros, 10 columnas, 5 años).
+Original files location: `data/raw/`
 
-### Esquema Canónico
-| Columna | Tipo de Dato | Descripción |
-| :--- | :--- | :--- |
-| `year` | Integer | Año histórico de publicación del reporte |
-| `country` | Text | Nombre normalizado del país |
-| `happiness_rank` | Integer | Posición del país en el ranking anual (derivada) |
-| `happiness_score` | Float | Puntuación objetivo de felicidad |
-| `gdp` | Float | Producto Interno Bruto per cápita (normalizado) |
-| `social_support` | Float | Apoyo social (unificación de Family / Social Support) |
-| `health` | Float | Esperanza de vida saludable |
-| `freedom` | Float | Libertad para tomar decisiones de vida |
-| `corruption` | Float | Percepción de corrupción (1 nulo conocido en UAE 2018) |
-| `generosity` | Float | Indicador de generosidad |
+* `2015.csv`: 158 records, 12 columns.
+* `2016.csv`: 157 records, 13 columns.
+* `2017.csv`: 155 records, 12 columns.
+* `2018.csv`: 156 records, 9 columns.
+* `2019.csv`: 156 records, 9 columns.
+* **Cumulative total:** 782 records.
 
-### Correlaciones Bivariadas Anuales (Aproximadas) con `happiness_score`
-> *Nota: Estas métricas corresponden a asociaciones estadísticas bivariadas y no implican causalidad.*
+### Consolidated Dataset
 
-| Indicador | 2015 | 2016 | 2017 | 2018 | 2019 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
+Location: `data/processed/world_happiness_2015_2019.csv` (782 records, 10 columns, 5 years).
+
+### Canonical Schema
+
+| Column | Data Type | Description |
+| ----- | ----- | ----- |
+| `year` | Integer | Historical publication year of the report |
+| `country` | Text | Normalized country name |
+| `happiness_rank` | Integer | Country rank in the annual report (derived) |
+| `happiness_score` | Float | Target score for happiness |
+| `gdp` | Float | Gross Domestic Product per capita (normalized) |
+| `social_support` | Float | Social support (unification of Family / Social Support) |
+| `health` | Float | Healthy life expectancy |
+| `freedom` | Float | Freedom to make life choices |
+| `corruption` | Float | Perceptions of corruption (1 known null in UAE 2018) |
+| `generosity` | Float | Generosity indicator |
+
+### Approximate Annual Bivariate Correlations with `happiness_score`
+
+> *Note: These metrics correspond to bivariate statistical associations and do not imply causality.*
+
+| Indicator | 2015 | 2016 | 2017 | 2018 | 2019 |
+| ----- | ----- | ----- | ----- | ----- | ----- |
 | **GDP** | 0.781 | 0.790 | 0.812 | 0.802 | 0.794 |
 | **Health** | 0.724 | 0.765 | 0.782 | 0.776 | 0.780 |
 | **Social Support** | 0.741 | 0.739 | 0.753 | 0.746 | 0.777 |
@@ -108,112 +108,124 @@ Ubicación: `data/processed/world_happiness_2015_2019.csv` (782 registros, 10 co
 | **Corruption** | 0.395 | 0.402 | 0.429 | 0.405 | 0.386 |
 | **Generosity** | 0.180 | 0.157 | 0.155 | 0.136 | 0.076 |
 
-### Decisiones Metodológicas de Limpieza y Armonización
-1. **Homologación de nombres:** Mapeo de variables cambiantes (`Family` en 2015-2016 y `Social support` en 2017-2019 unificados en `social_support`).
-2. **Normalización geográfica:** Estandarización de nombres para evitar colisiones o fragmentaciones (`Somaliland region` → `Somaliland Region`, `Macedonia` → `North Macedonia`, `Hong Kong S.A.R., China` → `Hong Kong`, `Taiwan Province of China` → `Taiwan`, `Trinidad & Tobago` → `Trinidad and Tobago`, `North Cyprus / Northern Cyprus` → `Northern Cyprus`, `Swaziland` → `Eswatini`).
-3. **Preservación de atípicos e incompletos:** Se conservó el valor nulo de `corruption` para UAE (2018) y los 5 valores cero en `health` al no existir evidencia suficiente de error de digitalización.
-4. **Sin imputación destructiva en raw:** No se eliminaron observaciones ni se aplicó imputación en la capa de datos canónica para preservar trazabilidad.
-5. **Panel Longitudinal:** Se identificaron 141 países presentes ininterrumpidamente durante los 5 años ($141 \times 5 = 705$ observaciones) para análisis longitudinales específicos, manteniendo los 782 registros en la tabla procesada general.
+### Methodological Cleaning and Harmonization Decisions
 
-### Variables Excluidas del Modelado Iniciar
-- `happiness_rank`: Excluida por ser una variable estrictamente derivada de la variable objetivo (evitar Target Leakage).
-- `Dystopia Residual`: Excluida debido a su relación mecánica con la construcción del indicador.
-- `country`, `year`, `region`: Excluidas como predictores en el modelo inicial numérico para evitar sesgos o codificaciones categóricas prematuras.
+1. **Column Mapping:** Unification of evolving variables (`Family` in 2015–2016 and `Social support` in 2017–2019 mapped to `social_support`).
+2. **Geographical Normalization:** Standardization of country names to prevent fragmentation (`Somaliland region` → `Somaliland Region`, `Macedonia` → `North Macedonia`, `Hong Kong S.A.R., China` → `Hong Kong`, `Taiwan Province of China` → `Taiwan`, `Trinidad & Tobago` → `Trinidad and Tobago`, `North Cyprus / Northern Cyprus` → `Northern Cyprus`, `Swaziland` → `Eswatini`).
+3. **Preservation of Outliers and Missing Values:** Retained the single null value in `corruption` for UAE (2018) and the 5 zero values in `health`, as there was insufficient evidence of measurement error.
+4. **No Destructive Imputation in Raw Data:** Neither rows were dropped nor imputation applied to the canonical layer to preserve full auditability.
+5. **Longitudinal Panel:** Identified 141 countries present across all 5 years ($141 \times 5 = 705$ observations) for specific longitudinal analysis, while keeping 782 records in the general processed dataset.
 
----
+### Variables Excluded from Modeling
 
-## 3. Feature Engineering y Modelo Baseline
-
-### Definición del Problema
-Regresión supervisada multivariable:
-- **Predictoras ($X$):** `gdp`, `social_support`, `health`, `freedom`, `corruption`, `generosity`.
-- **Objetivo ($y$):** `happiness_score`.
-
-### Estadísticas Descriptivas de las Predictoras
-- **GDP:** Media = 0.916, Std = 0.407, Mediana = 0.982, Máx = 2.096
-- **Social Support:** Media = 1.078, Std = 0.330, Mediana = 1.125, Máx = 1.644
-- **Health:** Media = 0.612, Std = 0.248, Mediana = 0.647, Máx = 1.141
-- **Freedom:** Media = 0.411, Std = 0.153, Mediana = 0.431, Máx = 0.724
-- **Corruption:** Media = 0.125, Std = 0.106, Mediana = 0.091, Máx = 0.552 (781 válidos, 1 nulo)
-- **Generosity:** Media = 0.219, Std = 0.122, Mediana = 0.202, Máx = 0.838
-- **Happiness Score (Target):** Media = 5.379, Std = 1.127, Mín = 2.693, Mediana = 5.322, Máx = 7.769
-
-*Correlación global GDP-Health: 0.784. Correlación global GDP-Happiness: 0.789.*
-
-### Modelo Baseline (Linear Regression Pipeline)
-- **Partición:** Split 80% entrenamiento (625 reg), 20% prueba (157 reg), `random_state=42`, `shuffle=True`. Redondeo a 3 decimales en memoria.
-- **Pipeline:** `SimpleImputer(strategy='median')` → `StandardScaler()` → `LinearRegression()`.
-- **Valores Aprendidos en Train:**
-  - Medianas imputer: GDP (0.979), Social Support (1.125), Health (0.644), Freedom (0.433), Corruption (0.091), Generosity (0.204).
-  - Medias scaler: GDP (0.911), Social Support (1.080), Health (0.609), Freedom (0.413), Corruption (0.127), Generosity (0.222).
-  - Coeficientes estandarizados: GDP (0.438), Social Support (0.217), Health (0.256), Freedom (0.225), Corruption (0.128), Generosity (0.059). Intercepto: 5.377.
-
-#### Métricas del Baseline (Conjunto de Prueba 20% - 157 reg)
-- **MAE:** 0.441
-- **MSE:** 0.329
-- **RMSE:** 0.574
-- **$R^2$:** 0.729
-- **Análisis de Residuos ($Residual = Actual - Predicted$):** Media = -0.001, Std = 0.576, Min = -1.767, Mediana = 0.014, Max = 1.434.
-- **Artefacto generado:** `models/happiness_regression_pipeline.joblib`.
+* `happiness_rank`: Excluded because it is directly derived from the target variable (prevention of Target Leakage).
+* `Dystopia Residual`: Excluded due to its mechanical relation to the construction of the target score.
+* `country`, `year`, `region`: Excluded as predictors in the initial numeric baseline model to avoid premature bias or categorical encoding.
 
 ---
 
-## 4. Fase B: Comparación y Selección del Modelo Final
+## 3. Feature Engineering and Baseline Model
 
-Se realizó un segundo experimento de evaluación comparativa utilizando una división limpia del **70% Entrenamiento (547 registros)** y **30% Prueba (235 registros)** con `random_state=42`.
+### Problem Formulation
 
-### Resultados Comparativos de Modelos
+Supervised multivariable regression:
 
-| Modelo | MAE | MSE | RMSE | $R^2$ |
-| :--- | :---: | :---: | :---: | :---: |
+* **Predictors (**$X$**):** `gdp`, `social_support`, `health`, `freedom`, `corruption`, `generosity`.
+* **Target (**$y$**):** `happiness_score`.
+
+### Descriptive Statistics of Predictors
+
+* **GDP:** Mean = 0.916, Std = 0.407, Median = 0.982, Max = 2.096
+* **Social Support:** Mean = 1.078, Std = 0.330, Median = 1.125, Max = 1.644
+* **Health:** Mean = 0.612, Std = 0.248, Median = 0.647, Max = 1.141
+* **Freedom:** Mean = 0.411, Std = 0.153, Median = 0.431, Max = 0.724
+* **Corruption:** Mean = 0.125, Std = 0.106, Median = 0.091, Max = 0.552 (781 valid, 1 null)
+* **Generosity:** Mean = 0.219, Std = 0.122, Median = 0.202, Max = 0.838
+* **Happiness Score (Target):** Mean = 5.379, Std = 1.127, Min = 2.693, Median = 5.322, Max = 7.769
+
+*Global GDP-Health correlation: 0.784. Global GDP-Happiness correlation: 0.789.*
+
+### Baseline Model (Linear Regression Pipeline)
+
+* **Split:** 80% Training (625 records), 20% Testing (157 records), `random_state=42`, `shuffle=True`. In-memory rounding to 3 decimals.
+* **Pipeline:** `SimpleImputer(strategy='median')` → `StandardScaler()` → `LinearRegression()`.
+* **Learned Parameters on Train:**
+  * Imputer Medians: GDP (0.979), Social Support (1.125), Health (0.644), Freedom (0.433), Corruption (0.091), Generosity (0.204).
+  * Scaler Means: GDP (0.911), Social Support (1.080), Health (0.609), Freedom (0.413), Corruption (0.127), Generosity (0.222).
+  * Standardized Coefficients: GDP (0.438), Social Support (0.217), Health (0.256), Freedom (0.225), Corruption (0.128), Generosity (0.059). Intercept: 5.377.
+
+#### Baseline Metrics (Test Set 20% - 157 records)
+
+* **MAE:** 0.441
+* **MSE:** 0.329
+* **RMSE:** 0.574
+* $R^2$**:** 0.729
+* **Residual Analysis (**$Residual = Actual - Predicted$**):** Mean = -0.001, Std = 0.576, Min = -1.767, Median = 0.014, Max = 1.434.
+* **Exported Artifact:** `models/happiness_regression_pipeline.joblib`.
+
+---
+
+## 4. Phase B: Model Comparison and Final Selection
+
+A second comparative evaluation experiment was performed using a clean **70% Training (547 records)** and **30% Test (235 records)** split with `random_state=42`.
+
+### Model Evaluation Results
+
+| Model | MAE | MSE | RMSE | $R^2$ |
+| ----- | ----- | ----- | ----- | ----- |
 | **Linear Regression** | 0.449 | 0.341 | 0.584 | 0.727 |
 | **Decision Tree Regressor** | 0.582 | 0.578 | 0.760 | 0.537 |
 | **Random Forest Regressor** | **0.408** | **0.272** | **0.522** | **0.782** |
 
-> **Aclaración Metodológica:** Las métricas del Baseline (80/20) y de esta etapa comparativa (70/30) provienen de particiones distintas, por lo cual no son comparables directamente entre sí.
+> **Methodological Clarification:** The Baseline (80/20) and Comparative (70/30) metrics stem from different split ratios and cannot be directly compared against one another.
 
-### Selección y Configuración del Modelo Final
-Se seleccionó **Random Forest Regressor** debido a su capacidad superior de generalización y menor tasa de error absoluto y cuadrático en el conjunto de test.
+### Final Model Selection and Configuration
 
-- **Hiperparámetros:** `n_estimators=200`, `random_state=42`, `n_jobs=-1`.
-- **Preprocesamiento:** Imputación por mediana integrada en el pipeline.
-- **Artefacto exportado:** `models/model.pkl` (~9.73 MB).
-- **Validación de Serialización:** Carga verificada mediante `joblib.load()`, produciendo un 100% de coincidencia exacta ($Delta = 0.000000$) respecto al modelo en memoria.
+**Random Forest Regressor** was selected due to its superior generalization capabilities and lower test error rates.
 
----
-
-## 5. Fase B: Arquitectura Apache Kafka y Streaming Pipeline
-
-### Infraestructura Contenerizada (`docker-compose.yml`)
-- **Kafka Broker:** Imagen `apache/kafka:4.4.0`, Contenedor: `happiness-streaming-broker`, Puerto Host: `9092`.
-- **PostgreSQL DB:** Imagen `postgres:18`, Contenedor: `happiness-streaming-db`, Puerto Host: `5433` (interno `5432`). Base de datos: `happiness_streaming`.
-
-### Topic Kafka Configuration
-- **Nombre:** `happiness-events`
-- **Particiones:** 3
-- **Replication Factor:** 1
-- **Message Key:** `country` (Asegura que todos los eventos de un mismo país arriben ordenados a la misma partición).
-- **Distribución real observada en producción:**
-  - Partición 0: 654 mensajes
-  - Partición 1: 440 mensajes
-  - Partición 2: 470 mensajes
-  - **Total:** 1,564 mensajes (2 ejecuciones completas del productor).
-
-### Productor Kafka (`src/streaming/producer.py`)
-- Lee el dataset consolidado (`world_happiness_2015_2019.csv`).
-- Genera eventos con `event_id` determinístico basado en el patrón: `HAPPINESS-{year}-{COUNTRY_UPPER}`.
-- Incorpora timestamp UTC (`event_time`) con formato estricto ISO-8601 (terminación `Z`).
-- Configuración de tolerancia a fallos: `acks=all`, `retries=5`, `enable_idempotence=True`.
-- Delay de transmisión: `STREAM_DELAY_SECONDS=0.5`.
-- **Métricas de producción:** 2 ejecuciones completas realizadas. $782 \times 2 = 1,564$ eventos transmitidos, 0 fallos de red, 0 mensajes rechazados por broker.
+* **Hyperparameters:** `n_estimators=200`, `random_state=42`, `n_jobs=-1`.
+* **Preprocessing:** Integrated median imputation inside the pipeline.
+* **Exported Artifact:** `models/model.pkl` (\~9.73 MB).
+* **Serialization Validation:** Verified via `joblib.load()`, achieving exact match ($Delta = 0.000000$) against the in-memory predictions.
 
 ---
 
-## 6. Contrato de Eventos (`src/streaming/event_contract.py`)
+## 5. Phase B: Apache Kafka Architecture and Streaming Pipeline
 
-Para desacoplar el broker Kafka de la lógica de negocio del modelo, se definió un contrato estricto de validación previa a la inferencia.
+### Containerized Infrastructure (`docker-compose.yml`)
 
-### Estructura del Contrato
+* **Kafka Broker:** Image `apache/kafka:4.4.0`, Container: `happiness-streaming-broker`, Host Port: `9092`.
+* **PostgreSQL DB:** Image `postgres:18`, Container: `happiness-streaming-db`, Host Port: `5433` (internal `5432`). Database: `happiness_streaming`.
+
+### Kafka Topic Configuration
+
+* **Name:** `happiness-events`
+* **Partitions:** 3
+* **Replication Factor:** 1
+* **Message Key:** `country` (Ensures messages for the same country land in the same partition in order).
+* **Observed Partition Distribution:**
+  * Partition 0: 654 messages
+  * Partition 1: 440 messages
+  * Partition 2: 470 messages
+  * **Total:** 1,564 messages (2 full producer runs).
+
+### Kafka Producer (`src/streaming/producer.py`)
+
+* Reads the consolidated dataset (`world_happiness_2015_2019.csv`).
+* Builds deterministic events with pattern: `HAPPINESS-{year}-{COUNTRY_UPPER}`.
+* Adds UTC timestamp (`event_time`) in strict ISO-8601 format (`Z` suffix).
+* Fault tolerance config: `acks=all`, `retries=5`, `enable_idempotence=True`.
+* Transmission delay: `STREAM_DELAY_SECONDS=0.5`.
+* **Production Metrics:** 2 complete runs executed. $782 \times 2 = 1,564$ events transmitted, 0 network errors, 0 broker rejections.
+
+---
+
+## 6. Event Contract (`src/streaming/event_contract.py`)
+
+To decouple the Kafka broker from model logic, a strict contract is enforced prior to model execution.
+
+### Contract Schema
+
 ```python
 REQUIRED_FIELDS = [
     "event_id", "country", "year", "gdp", "social_support", 
@@ -228,82 +240,86 @@ ALLOWED_YEARS = [2015, 2016, 2017, 2018, 2019]
 TARGET_FIELD = "actual_happiness_score"
 ```
 
-### Reglas de Validación Aplicadas
-1. Presencia obligatoria de todos los campos definidos en `REQUIRED_FIELDS`.
-2. Rechazo de campos adicionales o no especificados (*strict schema*).
-3. Validación de tipos numéricos (`float`/`int`). Se permite valor nulo explícito únicamente en `corruption`.
-4. `year` debe pertenecer restrictivamente a `ALLOWED_YEARS`.
-5. `event_time` debe ser una cadena ISO-8601 válida finalizada en `Z`.
-6. `actual_happiness_score` se requiere exclusivamente para registro/evaluación offline y **jamás** se incluye como característica dentro de `MODEL_FEATURES`.
+### Validation Rules
+
+1. Mandatory presence of all `REQUIRED_FIELDS`.
+2. Rejection of unexpected fields (strict schema enforcement).
+3. Validation of numeric types (`float`/`int`). Null values allowed exclusively for `corruption`.
+4. `year` must strictly belong to `ALLOWED_YEARS`.
+5. `event_time` must be a valid ISO-8601 UTC string ending in `Z`.
+6. `actual_happiness_score` is required solely for offline evaluation/logging and is **never** passed into `MODEL_FEATURES`.
 
 ---
 
-## 7. Consumidor Kafka e Inferencia en Tiempo Real
+## 7. Kafka Consumer and Real-time Inference
 
-### Consumidor (`src/streaming/consumer.py`)
-- **Group ID:** `happiness-ml-team`
-- **Estrategia de Offsets:** `enable_auto_commit=False`, `auto_offset_reset='earliest'`, `max_poll_records=1`.
-- Carga el artefacto `models/model.pkl` en memoria durante la inicialización.
+### Consumer (`src/streaming/consumer.py`)
+
+* **Group ID:** `happiness-ml-team`
+* **Offset Strategy:** `enable_auto_commit=False`, `auto_offset_reset='earliest'`, `max_poll_records=1`.
+* Loads `models/model.pkl` once during initialization.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              FLUJO DE TRABAJO DEL CONSUMIDOR                           │
+│                               CONSUMER PROCESSING FLOW                                 │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
- [ Mensaje Kafka ] ──> 1. Persistencia Raw Inmediata (raw_events BYTEA)
+ [ Kafka Message ] ──> 1. Immediate Raw Persistence (raw_events BYTEA)
                              │
                              ▼
-                       2. Validación de Contrato
+                       2. Contract Validation
                              │
             ┌────────────────┴────────────────┐
-            │ VÁLIDO                          │ INVÁLIDO
+            │ VALID                           │ INVALID
             ▼                                 ▼
-      3. Chequeo Deduplicación (event_id)  Registrar Status INVALID_* en raw_events
+      3. Deduplication Check (event_id)    Record INVALID_* Status in raw_events
             │
       ┌─────┴────────────────┐
-      │ ÚNICO                │ DUPLICADO
+      │ UNIQUE               │ DUPLICATE
       ▼                      ▼
-  4. Inferencia ML      Marcar is_duplicate=TRUE en raw_events
+  4. ML Inference       Mark is_duplicate=TRUE in raw_events
      (Random Forest)         │
-      │                      └─> Finalizar procesamiento del evento
+      │                      └─> End Event Processing
       ▼
-  5. Almacenar Predicción (predictions)
+  5. Store Prediction (predictions)
       │
       ▼
-  6. Transacción Completada -> Manual Offset Commit
+  6. Transaction Complete -> Manual Offset Commit
 ```
 
-### Mecanismo de Deduplicación y Persistencia Raw
-- **Persistencia Raw Inmediata:** El mensaje se guarda en la tabla `raw_events` antes de validar el contrato o invocar el modelo, garantizando auditoría total.
-- **Control de Duplicados de Negocio:** Se evalúa la existencia del `event_id`. Si el evento ya fue procesado con éxito anteriormente, el payload secundario se conserva en `raw_events` asignando `is_duplicate = TRUE` y omitiendo la re-ejecución de la inferencia.
-- **Garantías Transactional Commit:** El offset de Kafka solo se confirma (`commit()`) tras el éxito de la transacción SQL en PostgreSQL.
+### Raw Persistence and Deduplication Mechanism
+
+* **Immediate Raw Persistence:** The message is saved to `raw_events` before contract validation or inference, ensuring full auditability.
+* **Business Deduplication:** Evaluates `event_id`. If previously processed successfully, the payload is kept in `raw_events` with `is_duplicate = TRUE` while bypassing re-inference.
+* **Transactional Offset Commit:** The Kafka offset is committed (`commit()`) only after the PostgreSQL transaction successfully succeeds.
 
 ---
 
-## 8. Fase C: Persistencia Operational y Modelo Analítico Dimensional
+## 8. Phase C: Operational Persistence and Analytical Dimensional Model
 
-Base de Datos PostgreSQL: `happiness_streaming`.
+PostgreSQL Database: `happiness_streaming`.
 
-### 8.1 Capa Operacional
+### 8.1 Operational Layer
 
-#### Tabla `raw_events` (Conserva funcionalidad de `raw_happiness_events`)
-- **Propósito:** Registro raw idempotente de auditoría para todos los mensajes recibidos del broker.
-- **Campos:** `raw_event_id` (PK), `kafka_topic`, `kafka_partition`, `kafka_offset`, `kafka_key`, `raw_payload` (BYTEA), `event_id`, `status`, `is_duplicate`, `error_message`, `received_at`.
-- **Restricción de Integridad:** `CONSTRAINT unique_kafka_message UNIQUE (kafka_topic, kafka_partition, kafka_offset)`.
-- **Estados de Procesamiento (`status`):** `RECEIVED`, `VALID`, `INVALID_SCHEMA`, `INVALID_VALUES`, `PREDICTION_ERROR`.
+#### Table `raw_events` (Functional role of `raw_happiness_events`)
 
-#### Tabla `processed_events`
-- **Propósito:** Estado de ciclo de vida para los eventos de negocio que avanzan a inferencia.
-- **Campos:** `event_id` (PK), `raw_event_id` (FK a `raw_events`, Unique), `processing_status`, `model_version`, `processed_at`, `completed_at`.
-- **Estados:** `PROCESSING`, `PREDICTED`, `PREDICTION_ERROR`.
+* **Purpose:** Idempotent raw audit table for all broker messages.
+* **Fields:** `raw_event_id` (PK), `kafka_topic`, `kafka_partition`, `kafka_offset`, `kafka_key`, `raw_payload` (BYTEA), `event_id`, `status`, `is_duplicate`, `error_message`, `received_at`.
+* **Integrity Constraint:** `CONSTRAINT unique_kafka_message UNIQUE (kafka_topic, kafka_partition, kafka_offset)`.
+* **Processing Statuses:** `RECEIVED`, `VALID`, `INVALID_SCHEMA`, `INVALID_VALUES`, `PREDICTION_ERROR`.
 
-#### Tabla `predictions`
-- **Propósito:** Almacenar el resultado cuantitativo de la inferencia ML.
-- **Campos:** `prediction_id` (PK), `event_id` (FK a `processed_events`, Unique), `predicted_score`, `actual_score`, `absolute_error` (calculado mediante `ABS(actual_score - predicted_score)`), `model_version`, `predicted_at`.
+#### Table `processed_events`
 
----
+* **Purpose:** Lifecycle management of business events proceeding to inference.
+* **Fields:** `event_id` (PK), `raw_event_id` (FK to `raw_events`, Unique), `processing_status`, `model_version`, `processed_at`, `completed_at`.
+* **Statuses:** `PROCESSING`, `PREDICTED`, `PREDICTION_ERROR`.
 
-### 8.2 Capa Analítica — Modelo Dimensional en Esquema Estrella
+#### Table `predictions`
+
+* **Purpose:** Quantitative store of ML inference results.
+* **Fields:** `prediction_id` (PK), `event_id` (FK to `processed_events`, Unique), `predicted_score`, `actual_score`, `absolute_error` (`ABS(actual_score - predicted_score)`), `model_version`, `predicted_at`.
+
+### 8.2 Analytical Layer — Star Schema Model
 
 ```
            ┌───────────────────────────┐
@@ -331,76 +347,86 @@ Base de Datos PostgreSQL: `happiness_streaming`.
 └─────────────────────────────────────────────────┘
 ```
 
-#### Dimensión `dim_country`
-- **Registros:** 164 países únicos cargados.
-- **Atributos:** `country_id` (PK), `country_name` (Unique).
+#### Dimension `dim_country`
 
-#### Dimensión `dim_date`
-- **Propósito:** Representa la fecha de emisión/procesamiento del evento de streaming en el pipeline.
-- **Atributos:** `date_id` (Integer YYYYMMDD, PK), `full_date`, `year`, `quarter`, `month`, `month_name`, `day`, `day_of_week` (ISO 8601).
-- **Registro Cargar (Ejecución real):** 1 fila correspondiente a la fecha de emisión de la transmisión (`2026-11-07`, `date_id = 20261107`).
+* **Records:** 164 unique countries loaded.
+* **Attributes:** `country_id` (PK), `country_name` (Unique).
 
-> **Distinción Temporal Crucial:** 
-> - `dim_date` / `event_time`: Refiere al momento cronológico en que el evento de streaming fue publicado y procesado por la infraestructura.
-> - `report_year`: Atributo contenido en `fact_predictions` que conserva el año histórico original del informe (2015–2019). **Todo análisis de evolución histórica debe realizarse obligatoriamente mediante `report_year`.**
+#### Dimension `dim_date`
 
-#### Tabla de Hechos `fact_predictions`
-- **Registros cargados:** 782 hechos analíticos.
-- **Campos:** `prediction_id` (PK), `raw_event_id` (FK Unique a `raw_events`), `country_id` (FK), `date_id` (FK), `event_time`, `actual_score`, `predicted_score`, `prediction_error`, `prediction_timestamp`, `report_year`.
+* **Purpose:** Represents the streaming event emission timestamp.
+* **Attributes:** `date_id` (Integer YYYYMMDD, PK), `full_date`, `year`, `quarter`, `month`, `month_name`, `day`, `day_of_week` (ISO 8601).
+* **Loaded Records:** 1 row corresponding to the test run emission date (`2026-11-07`, `date_id = 20261107`).
 
----
+> **Crucial Temporal Distinction:**
+>
+> * `dim_date` / `event_time`: Refers to the moment the streaming event was transmitted and processed by the system.
+> * `report_year`: Attribute inside `fact_predictions` retaining the original historical report year (2015–2019). **Historical trend analysis must be conducted using `report_year`.**
 
-## 9. Validaciones de Integridad y Resultados Operacionales en PostgreSQL
+#### Fact Table `fact_predictions`
 
-### Resultados de la Ingesta Operacional
-- **Mensajes totales leídos desde Kafka Broker:** 1,564
-- **Registros insertados en `raw_events`:** 1,564
-- **Eventos de negocio únicos procesados (`is_duplicate = FALSE`):** 782
-- **Eventos duplicados detectados y marcados (`is_duplicate = TRUE`):** 782
-- **Registros en `processed_events`:** 782
-- **Registros en `predictions`:** 782
-
-### Validaciones de Consistencia Dimensional
-- **Registros en `fact_predictions`:** 782
-- **Orfanos en `country_id` / `date_id` / `raw_event_id`:** 0
-- **Inconsistencias en cálculo de error absoluto:** 0
-- **Integridad Referencial Capa Raw-Analítica:** 100% verificada.
+* **Loaded Records:** 782 analytical facts.
+* **Fields:** `prediction_id` (PK), `raw_event_id` (FK Unique to `raw_events`), `country_id` (FK), `date_id` (FK), `event_time`, `actual_score`, `predicted_score`, `prediction_error`, `prediction_timestamp`, `report_year`.
 
 ---
 
-## 10. Resultados Agregados de Predicción
+## 9. Integrity Validations and Operational Results in PostgreSQL
 
-Sobre las 782 predicciones persistidas en el data warehouse operacional se obtuvieron las siguientes métricas agregadas:
+### Operational Ingestion Results
 
-- **Total de registros predichos:** 782
-- **Cobertura geográfica:** 164 países
-- **Promedio de Puntuación Real (`actual_score`):** 5.3790
-- **Promedio de Puntuación Predicha (`predicted_score`):** 5.3801
-- **MAE Descriptivo Global (Dataset Completo):** **0.2189**
-- **Sesgo de Predicción Global (*Prediction Bias*):** +0.0011
+* **Total Kafka broker messages read:** 1,564
+* **Inserted into `raw_events`:** 1,564
+* **Unique business events processed (`is_duplicate = FALSE`):** 782
+* **Duplicate events flagged (`is_duplicate = TRUE`):** 782
+* **Records in `processed_events`:** 782
+* **Records in `predictions`:** 782
 
-> **Aclaración Metodológica Crítica:**
-> El **MAE descriptivo de ~0.219** se calcula sobre la totalidad de los 782 registros almacenados, los cuales incluyen observaciones que participaron activamente en la fase de entrenamiento del modelo. Por ende, **no debe presentarse ni interpretarse como una métrica de generalización del modelo**.
-> La métrica formal de evaluación sobre el conjunto de prueba independiente (235 registros, 30% holdout) para el modelo Random Forest es:
-> - **MAE Test:** **0.408**
-> - **MSE Test:** 0.272
-> - **RMSE Test:** 0.522
-> - **$R^2$ Test:** 0.782
+### Dimensional Consistency Validations
+
+* **Records in `fact_predictions`:** 782
+* **Orphan records (`country_id` / `date_id` / `raw_event_id`):** 0
+* **Absolute error calculation mismatches:** 0
+* **Raw-to-Analytical Referencial Integrity:** 100% verified.
 
 ---
 
-## 11. Power BI — Integración y Dashboard Analítico
+## 10. Aggregated Prediction Results
 
-### Configuración de Conexión
-- **Modo:** Direct Import
-- **Fuente:** PostgreSQL Database (`localhost:5433`, DB: `happiness_streaming`)
-- **Tablas importadas:** `public.fact_predictions`, `public.dim_country`, `public.dim_date`.
+Across all 782 predictions persisted in PostgreSQL, the following metrics were calculated:
 
-### Modelo de Datos (Esquema Estrella Activo)
-- `dim_country[country_id]` `1` : `*` `fact_predictions[country_id]` (Filtro simple)
-- `dim_date[date_id]` `1` : `*` `fact_predictions[date_id]` (Filtro simple)
+* **Total Predicted Records:** 782
+* **Geographical Coverage:** 164 countries
+* **Average Actual Score:** 5.3790
+* **Average Predicted Score:** 5.3801
+* **Global Descriptive MAE (Stored Dataset):** **0.2189**
+* **Global Prediction Bias:** +0.0011
 
-### Medidas DAX Implementadas
+> **Critical Methodological Clarification:**
+> The **descriptive MAE of \~0.219** is calculated over all 782 stored records, which include observations that were part of the training split. Therefore, **it must not be used as an out-of-sample generalization metric**.
+> The official test set metric for the Random Forest model (235 records, 30% holdout) is:
+>
+> * **Test MAE:** **0.408**
+> * **Test MSE:** 0.272
+>
+> * **Test RMSE:** 0.522
+> * **Test** $R^2$**:** 0.782
+
+---
+
+## 11. Power BI — Analytics Integration & Dashboard
+
+### Connection Setup
+
+* **Mode:** Direct Import
+* **Source:** PostgreSQL Database (`localhost:5433`, DB: `happiness_streaming`)
+* **Tables:** `public.fact_predictions`, `public.dim_country`, `public.dim_date`.
+
+### Data Model (Active Star Schema)
+
+* `dim_country[country_id]` `1` : `*` `fact_predictions[country_id]` (Single filter direction)
+* `dim_date[date_id]` `1` : `*` `fact_predictions[date_id]` (Single filter direction)
+
+### DAX Measures
 
 ```dax
 Total Predictions = 
@@ -440,22 +466,24 @@ COUNTROWS(fact_predictions)
 ```
 
 ### Dashboard: "Model Performance Overview"
-Visión de las 9 componentes/visualizaciones estructuradas:
+
+Structure of the 9 visualizations/components:
+
 1. **KPI Cards:** `Total Predictions` (782), `Countries Analyzed` (164), `Average MAE` (0.219), `Average Actual Score` (5.379).
-2. **Actual vs Predicted Score (Scatter Plot):** Eje X = `actual_score`, Eje Y = `predicted_score`, Detalle = `prediction_id`, Tooltip = `prediction_error`. Muestra alineación estrecha a la diagonal ideal de $45^\circ$.
-3. **Average MAE by Country (Horizontal Bar Chart):** Variación del error medio por país.
-4. **Actual vs Predicted by Report Year (Line Chart):** Promedios anuales históricos alineados entre 5.35 y 5.41.
-5. **Distribution of Prediction Errors (Column Chart):** Histograma de frecuencia mediante `Error Bin` (amplitud 0.1). Muestra alta concentración en el intervalo $[0.0 - 0.3]$.
-6. **Average Prediction Error by Report Year:** Evolución del MAE entre 0.200 (2018) y 0.243 (2015).
-7. **Top 10 Countries with Highest Prediction Error:** Identificación de países atípicos (Ej. Botswana MAE ~1.04, Tanzania MAE ~0.88).
-8. **Prediction Bias by Report Year:** Muestra subestimación promedio en 2015 y 2016 (Sesgo -0.078 en 2016) y sobreestimación leve entre 2017 y 2019 (Sesgo +0.057 en 2017).
-9. **Predictions by Report Year:** Volumen de predicciones distribuidas uniformemente por año histórico.
+2. **Actual vs Predicted Score (Scatter Plot):** X-axis = `actual_score`, Y-axis = `predicted_score`, Detail = `prediction_id`, Tooltip = `prediction_error`. Shows tight alignment to the ideal $45^\circ$ line.
+3. **Average MAE by Country (Horizontal Bar Chart):** Mean error variation per country.
+4. **Actual vs Predicted by Report Year (Line Chart):** Annual historical averages tracking between 5.35 and 5.41.
+5. **Distribution of Prediction Errors (Column Chart):** Frequency histogram built via `Error Bin` (0.1 step size). High concentration in $[0.0 - 0.3]$.
+6. **Average Prediction Error by Report Year:** MAE trend ranging between 0.200 (2018) and 0.243 (2015).
+7. **Top 10 Countries with Highest Prediction Error:** Highlights specific outliers (e.g., Botswana MAE \~1.04, Tanzania MAE \~0.88).
+8. **Prediction Bias by Report Year:** Demonstrates slight underestimation in 2015–2016 (Bias -0.078 in 2016) and slight overestimation in 2017–2019 (Bias +0.057 in 2017).
+9. **Predictions by Report Year:** Uniform historical record volume per year.
 
 ---
 
-## 12. Estructura del Proyecto
+## 12. Repository Structure
 
-```text
+```
 Workshop3/
 ├── data/
 │   ├── raw/
@@ -482,80 +510,88 @@ Workshop3/
 
 ---
 
-## 13. Configuración y Guía de Ejecución
+## 13. Setup and Execution Guide
 
-### Requisitos Previos
-- Python 3.10+
-- Docker Desktop y Docker Compose
-- Power BI Desktop
+### Prerequisites
 
-### 1. Entorno Python
-```powershell
+* Python 3.10+
+* Docker Desktop & Docker Compose
+* Power BI Desktop
+
+### 1. Python Environment
+
+```bash
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-### 2. Despliegue de Infraestructura Contenerizada
+### 2. Infrastructure Deployment
+
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-### 3. Configuración de Base de Datos
-- **Host:** `127.0.0.1`
-- **Port:** `5433`
-- **Database:** `happiness_streaming`
-- **User:** `happiness_user`
-- *(Las credenciales de acceso deben ser configuradas mediante variables de entorno local o archivo `.env` no subido al repositorio).*
+### 3. Database Configuration
 
-### 4. Ejecución del Consumer (ML Streaming Consumer)
-En una terminal activa:
+* **Host:** `127.0.0.1`
+* **Port:** `5433`
+* **Database:** `happiness_streaming`
+* **User:** `happiness_user`
+* *(Credentials should be loaded via a local `.env` file).*
+
+### 4. Run Consumer (ML Streaming Consumer)
+
+In a dedicated terminal:
+
 ```bash
 python src/streaming/consumer.py
 ```
 
-### 5. Ejecución del Producer (Kafka Transmitter)
-En una segunda terminal:
+### 5. Run Producer (Kafka Event Generator)
+
+In a second terminal:
+
 ```bash
 python src/streaming/producer.py
 ```
 
 ---
 
-## 14. Compendio de Decisiones Técnicas y Justificaciones
+## 14. Justification of Technical Decisions
 
-1. **Preservación de CSVs Raw:** Garantiza auditabilidad y trazabilidad completa del origen sin corrupción de datos.
-2. **Esquema Canónico:** Resuelve la heterogeneidad de nombres entre las 5 ediciones anuales del reporte.
-3. **Mapeo `Family` → `social_support`:** Homologación conceptual justificada en documentación oficial del reporte, advirtiendo posibles cambios metodológicos menores.
-4. **No Imputación en Capa Canónica:** Los nulos y ceros legítimos se conservan hasta la etapa de ML para evitar data leakage en la fuente.
-5. **Exclusión de `happiness_rank` y `Dystopia Residual`:** Eliminación estricta de riesgo de Target Leakage.
-6. **Mantenimiento de `generosity`:** Conservada por fundamentación teórica socioeconómica a pesar de su baja correlación bivariada.
-7. **Imputación/Escalado dentro de Scikit-Learn Pipeline:** Evita de forma rigurosa la contaminación del conjunto de test (*Data Leakage*).
-8. **Random Forest sobre Linear Regression:** Selección fundamentada empíricamente al reducir el MAE de 0.449 a 0.408 y elevar el $R^2$ a 0.782.
-9. **Contrato Estricto de Eventos (`event_contract.py`):** Desacopla la infraestructura de mensajería del modelo, filtrando mensajes malformados.
-10. **Persistencia Raw Inmediata (`raw_events`):** Mantiene la trazabilidad y los bytes originales de mensajes Kafka (`BYTEA`) incluso ante fallos de contrato o inferencia.
-11. **Deduplicación por `event_id` en Consumidor:** Garantiza la idempotencia de negocio sin descartar la auditoría de mensajería redundante de Kafka.
-12. **Deshabilitación de Auto-Commit en Kafka Consumer:** Garantiza procesamiento *At-Least-Once* coordinado transaccionalmente con PostgreSQL.
-13. **Distinción entre `event_time` y `report_year`:** Previene la confusión entre el tiempo de transmisión de streaming y la dimensión temporal histórica de los datos.
-14. **Modelo Dimensional Estrella para Power BI:** Optimiza la velocidad de consulta en modo Direct Import y simplifica el filtrado analítico.
-
----
-
-## 15. Limitaciones Conocidas
-
-- **Partición Aleatoria en ML:** Al dividir aleatoriamente registros, un mismo país puede estar presente en train y test (en distintos años), por lo que la métrica de evaluación no mide generalización pura hacia países totalmente no observados o predicciones hacia el futuro (*Time-Split*).
-- **Inexistencia de Pruebas de Normalidad Formales:** Los diagnósticos de residuos se basaron en análisis visuales de dispersión e histogramas.
-- **Métrica MAE del Dashboard:** El valor descriptivo de 0.219 no representa el error de prueba fuera de muestra (*out-of-sample*), el cual es formalmente 0.408.
-- **Fecha Única en Streaming:** La dimensión `dim_date` contiene una única fecha derivada del momento de ejecución de las pruebas.
-- **Multicolinealidad:** Presencia de alta correlación entre `gdp` y `health` (0.784) no tratada mediante reducción de dimensionalidad para priorizar la interpretabilidad de las variables.
+1. **Preservation of Raw CSVs:** Ensures total auditability and raw data integrity without altering sources.
+2. **Canonical Schema:** Standardizes structural differences across the 5 annual dataset editions.
+3. **`Family` → `social_support` Mapping:** Conceptually justified by official report notes while explicitly acknowledging minor methodology changes across years.
+4. **Deferred Imputation:** Retains raw zeros and nulls in data files to prevent data leakage prior to the ML pipeline.
+5. **Target Leakage Prevention:** Exclusion of `happiness_rank` and `Dystopia Residual`.
+6. **Retention of `generosity`:** Maintained based on socioeconomic domain knowledge despite low bivariate correlation.
+7. **Pipeline Preprocessing (Scikit-Learn):** Prevents test set contamination (*Data Leakage*) by embedding fit transformations strictly inside training.
+8. **Random Forest Selection:** Empirical choice after reducing test MAE from 0.449 to 0.408 and improving $R^2$ to 0.782.
+9. **Strict Event Contract (`event_contract.py`):** Decouples transport infrastructure from inference logic, rejecting malformed events.
+10. **Immediate Raw Persistence (`raw_events`):** Stores raw message bytes (`BYTEA`) prior to validation/inference for audit safety.
+11. **Business Deduplication by `event_id`:** Provides application idempotency while keeping raw messaging audit logs intact.
+12. **Manual Offset Commit:** Guarantees *At-Least-Once* processing aligned transaccionality with PostgreSQL writes.
+13. **`event_time` vs `report_year` Separation:** Avoids confusing real-time message metadata with historical data properties.
+14. **Star Schema Model:** Optimizes Direct Import performance in Power BI and simplifies analytical slicing.
 
 ---
 
-## 16. Trabajo Futuro y Mejoras Propuestas
+## 15. Known Limitations
 
-- **Validación Cruzada Temporal (*TimeSeriesSplit*):** Evaluar la capacidad de pronóstico entrenando con años $t$ y probando exclusivamente sobre el año $t+1$.
-- **GroupKFold Cross-Validation:** Evaluar generalización aislando grupos de países completos en el conjunto de prueba.
-- **MLflow Tracking & Registry:** Incorporar un servidor de MLflow para la gestión del ciclo de vida, versionado y gobernanza de artefactos `.pkl`.
-- **Monitoreo de Data Drift y Concept Drift:** Implementar herramientas como Evidently AI o Great Expectations en el consumidor Kafka para detectar desviaciones en la distribución de las variables de entrada.
-- **Orquestación en Kubernetes / Helm:** Escalar los consumidores Kafka dentro de un Consumer Group administrado horizontalmente con KEDA (*Kubernetes Event-driven Autoscaling*).
+* **Random Split Strategy:** Random sampling allows the same country to exist across both train and test splits (in different years), meaning test metrics do not measure true out-of-sample generalization to completely unseen countries or unseen future years (*Time-Split*).
+* **Visual Residual Diagnostics:** Normality and homoscedasticity were verified visually rather than through formal statistical tests.
+* **Dashboard MAE Metric:** The 0.219 descriptive MAE on the dashboard reflects the full persisted set and does not equal out-of-sample test MAE (0.408).
+* **Single Streaming Date:** `dim_date` populated with 1 single date derived from the execution run.
+* **Multicollinearity:** High correlation between `gdp` and `health` (0.784) was retained without dimensionality reduction to keep interpretability straightforward.
+
+---
+
+## 16. Future Improvements
+
+* **Temporal Cross-Validation (*TimeSeriesSplit*):** Evaluate model capabilities by training on years $t$ and testing strictly on year $t+1$.
+* **GroupKFold Cross-Validation:** Test generalization by completely withholding groups of countries during training.
+* **MLflow Tracking & Registry:** Integrate an MLflow server to manage model versioning, metrics, and artifact lifecycle.
+* **Data Drift Monitoring:** Implement Evidently AI or Great Expectations inside the Kafka consumer to track input distribution shifts.
+* **Kubernetes / Helm Deployment:** Scale consumer groups horizontally on Kubernetes using KEDA (*Kubernetes Event-driven Autoscaling*).
