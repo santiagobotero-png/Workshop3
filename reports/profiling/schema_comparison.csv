@@ -1,0 +1,31 @@
+﻿column,2015,2016,2017,2018,2019,years_present
+Country,True,True,True,False,False,3
+Country or region,False,False,False,True,True,2
+Dystopia Residual,True,True,False,False,False,2
+Dystopia.Residual,False,False,True,False,False,1
+Economy (GDP per Capita),True,True,False,False,False,2
+Economy..GDP.per.Capita.,False,False,True,False,False,1
+Family,True,True,True,False,False,3
+Freedom,True,True,True,False,False,3
+Freedom to make life choices,False,False,False,True,True,2
+GDP per capita,False,False,False,True,True,2
+Generosity,True,True,True,True,True,5
+Happiness Rank,True,True,False,False,False,2
+Happiness Score,True,True,False,False,False,2
+Happiness.Rank,False,False,True,False,False,1
+Happiness.Score,False,False,True,False,False,1
+Health (Life Expectancy),True,True,False,False,False,2
+Health..Life.Expectancy.,False,False,True,False,False,1
+Healthy life expectancy,False,False,False,True,True,2
+Lower Confidence Interval,False,True,False,False,False,1
+Overall rank,False,False,False,True,True,2
+Perceptions of corruption,False,False,False,True,True,2
+Region,True,True,False,False,False,2
+Score,False,False,False,True,True,2
+Social support,False,False,False,True,True,2
+Standard Error,True,False,False,False,False,1
+Trust (Government Corruption),True,True,False,False,False,2
+Trust..Government.Corruption.,False,False,True,False,False,1
+Upper Confidence Interval,False,True,False,False,False,1
+Whisker.high,False,False,True,False,False,1
+Whisker.low,False,False,True,False,False,1
